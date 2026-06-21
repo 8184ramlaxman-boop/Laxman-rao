@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Registration System</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: var(--surface);
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+        }
+        h1, h2 {
+            margin-bottom: 1.5rem;
+            color: #1e293b;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.5rem;
+        }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus {
+            border-color: var(--primary);
+        }
+        button {
+            width: 100%;
+            padding: 0.85rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+        .alert {
+            padding: 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            display: none;
+            font-weight: 500;
+        }
+        .alert-error { background-color: #fee2e2; color: #991b1b; }
+        .alert-success { background-color: #dcfce7; color: #166534; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+        .btn-delete {
+            background: #ef4444;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+            width: auto;
+        }
+        .btn-delete:hover { background: #dc2626; }
+        .summary-box {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: #f1f5f9;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Course Registration Portal</h1>
+    
+    <div id="alertBox" class="alert"></div>
+
+    <div class="grid">
+        <!-- Registration Form Side -->
+        <div>
+            <h2>Student & Course Details</h2>
+            <form id="registrationForm" onsubmit="handleRegistration(event)">
+                <div class="form-group">
+                    <label for="studentName">Full Name</label>
+                    <input type="text" id="studentName" placeholder="John Doe" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentId">Student ID</label>
+                    <input type="text" id="studentId" placeholder="STU12345" required>
+                </div>
+                <div class="form-group">
+                    <label for="courseSelect">Select Course</label>
+                    <select id="courseSelect" required>
+                        <option value="" disabled selected>-- Choose a Course --</option>
+                        <option value="CS101|Introduction to Computer Science|4">CS101 - Introduction to Computer Science (4 Credits)</option>
+                        <option value="MAT202|Calculus II|3">MAT202 - Calculus II (3 Credits)</option>
+                        <option value="ENG105|Effective Communication|2">ENG105 - Effective Communication (2 Credits)</option>
+                        <option value="PHY101|General Physics|4">PHY101 - General Physics (4 Credits)</option>
+                        <option value="CHM101|General Chemistry|3">CHM101 - General Chemistry (3 Credits)</option>
+                    </select>
+                </div>
+                <button type="submit">Register Course</button>
+            </form>
+        </div>
+
+        <!-- Registered Summary Side -->
+        <div>
+            <h2>Registered Courses</h2>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Course Name</th>
+                            <th>Credits</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="courseTableBody">
+                        <!-- Dynamic rows appear here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="summary-box">
+                <p>Total Registered Credits: <span id="totalCredits">0</span> / 12 Max</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // System State Tracking
+    let registeredCourses = [];
+    const MAX_CREDITS = 12;
+
+    function showAlert(message, type) {
+        const alertBox = document.getElementById('alertBox');
+        alertBox.textContent = message;
+        alertBox.className = `alert alert-${type}`;
+        alertBox.style.display = 'block';
+        setTimeout(() => { alertBox.style.display = 'none'; }, 4000);
+    }
+
+    function handleRegistration(event) {
+        event.preventDefault();
+        
+        const courseSelect = document.getElementById('courseSelect');
+        if (!courseSelect.value) return;
+
+        // Extract values from drop-down data matrix
+        const [courseCode, courseName, creditsStr] = courseSelect.value.split('|');
+        const courseCredits = parseInt(creditsStr, 10);
+
+        // Rule 1: Check duplication
+        const isAlreadyRegistered = registeredCourses.some(course => course.code === courseCode);
+        if (isAlreadyRegistered) {
+            showAlert('Error: You have already registered for this course.', 'error');
+            return;
+        }
+
+        // Rule 2: Check credit ceiling capacity
+        const currentTotalCredits = registeredCourses.reduce((sum, item) => sum + item.credits, 0);
+        if (currentTotalCredits + courseCredits > MAX_CREDITS) {
+            showAlert(`Error: Total credits cannot exceed ${MAX_CREDITS}. Cannot add ${courseName}.`, 'error');
+            return;
+        }
+
+        // Push valid course item to list array state
+        registeredCourses.push({
+            code: courseCode,
+            name: courseName,
+            credits: courseCredits
+        });
+
+        showAlert('Course registered successfully!', 'success');
+        updateUI();
+    }
+
+    function removeCourse(code) {
+        registeredCourses = registeredCourses.filter(course => course.code !== code);
+        showAlert('Course removed successfully.', 'success');
+        updateUI();
+    }
+
+    function updateUI() {
+        const tbody = document.getElementById('courseTableBody');
+        const totalCreditsSpan = document.getElementById('totalCredits');
+        
+        tbody.innerHTML = '';
+        let total = 0;
+
+        registeredCourses.forEach(course => {
+            total += course.credits;
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong>${course.code}</strong></td>
+                <td>${course.name}</td>
+                <td>${course.credits}</td>
+                <td><button class="btn-delete" onclick="removeCourse('${course.code}')">Drop</button></td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        totalCreditsSpan.textContent = total;
+    }
+</script>
+
+</body>
+</html>
